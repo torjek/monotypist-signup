@@ -86,7 +86,7 @@ body {
 
 /* Logo */
 .logo {
-  max-width: 120px;
+  max-width: 200px;
   margin-bottom: 24px;
   animation: pulse 4s infinite ease-in-out;
   mix-blend-mode: lighten;
