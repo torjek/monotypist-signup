@@ -1,0 +1,8 @@
+# Original large logo (replaced by optimized versions)
+MonoTypist_logo_dark.png
+MonoTypist_logo.png
+MonoTypist_icon.png
+
+# Utility scripts
+*.py
+*.ps1
