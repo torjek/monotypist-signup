@@ -21,6 +21,8 @@ npm run build    # writes the static site to dist/
 | `src/layouts/Base.astro` | The frame every page shares: head, colours, fonts, header, footer |
 | `src/components/` | Header, footer, logo, the plain placeholder page |
 | `src/data/site.ts` | Navigation links, footer links, the main button |
+| `src/data/keyboard.ts` | The keyboard as data: where each key sits and what it types on each layer, in English, Danish and Hungarian |
+| `src/components/KeyboardTour.astro` | The home page's stepped drawing of how the keys are reached, drawn from `keyboard.ts` |
 | `public/assets/` | The design kit (CSS and scripts), copied unchanged from the design-taste-frontend skill. Do not edit |
 | `public/img/product/` | Product photographs. Files ending in `-480`, `-800`, `-1200` are smaller copies for small screens |
 | `public/fonts/` | Geist and Geist Mono, stored here so nothing loads from a font service |

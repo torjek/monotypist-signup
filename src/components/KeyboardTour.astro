@@ -1,0 +1,624 @@
+---
+// The home page section "How one hand types a full keyboard": six steps, each with two sentences
+// and a moving drawing. Step 1 folds a two-handed Colemak layout in half. Steps 2 to 5 press keys
+// on a drawing of the keyboard and show what gets typed. In step 6 the visitor types.
+//
+// Everything drawn comes from src/data/keyboard.ts. The words and the steps are in `steps` below;
+// what the keys do in each step is in the script at the foot of this file.
+//
+// Motion rules kept here: one loop runs at a time, it starts when the page loads, the round button
+// in the corner pauses it, and visitors who turn motion off get each step as a still picture.
+import { blockKeys, lowerKeys, knob, fiveWay, touchpad, caps, legends, langs } from '../data/keyboard';
+
+const steps = [
+  {
+    id: 'fold',
+    label: 'Fold in half',
+    text: 'Colemak gives each hand three rows of five keys. MonoTypist folds the right half onto the left: two characters a key.',
+  },
+  {
+    id: 'tap',
+    label: 'Tap a key',
+    text: 'Tap a key and it types its black legend, the letter your left hand has on a two-handed Colemak keyboard.',
+  },
+  {
+    id: 'space',
+    label: 'Hold Space',
+    text: 'Hold Space with your thumb and each key types its blue legend. Space and a key pressed together type one blue letter.',
+  },
+  {
+    id: 'enter',
+    label: 'Hold Enter',
+    text: 'Hold Enter and the keys become a number pad, with 4, 5 and 6 on the home row. The red legends show each number.',
+  },
+  {
+    id: 'delete',
+    label: 'Hold Delete',
+    text: 'Hold Delete for the orange legends: brackets and other symbols. Tapped alone, each thumb key does what its name says.',
+  },
+  {
+    id: 'try',
+    label: 'Try the keys',
+    text: 'Press the five keys from Q, A or Z on your own keyboard, with Space, Enter or Delete held. Or tap the drawing.',
+  },
+];
+
+const us = legends.us;
+const U = 64; // one key unit in the drawing
+const CAP = 58; // a keycap's side; the rest of the unit is the gap between keys
+const n = (v: number) => Math.round(v * 10) / 10;
+
+// Key symbols on a 24 by 24 box.
+const icons = {
+  esc: '<path class="kb-ic" d="M10.66 5.35A8 8 0 1 1 5.35 10.66"/><path class="kb-ic" d="M12 12L4 4M4 9V4h5"/>',
+  tab: '<path class="kb-ic" d="M4 8h15M15 4l4 4-4 4"/><path class="kb-ic" d="M20 16H5M9 12l-4 4 4 4"/>',
+  backspace: '<path class="kb-ic-fill" d="M8.5 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8.5L2 12z"/><path class="kb-ic-cut" d="M11.5 9l6 6M17.5 9l-6 6"/>',
+  shift: '<path class="kb-ic" d="M12 3.5l-7 7.5h4v5h6v-5h4z"/><path class="kb-ic" d="M8 20.5h8"/>',
+  enter: '<path class="kb-ic" d="M19 5v7.5H5.5"/><path class="kb-ic" d="M9.5 8.5l-4 4 4 4"/>',
+  delete: '<path class="kb-ic-fill" d="M15.5 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11.5L22 12z"/><path class="kb-ic-cut" d="M6.5 9l6 6M12.5 9l-6 6"/>',
+};
+const pauseIcon = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4.25" y="3.25" width="2.75" height="9.5" rx="0.9"/><rect x="9" y="3.25" width="2.75" height="9.5" rx="0.9"/></svg>';
+
+// The housing's outline, the touchpad with its cut corners and the cross of the 5-way switch.
+const housing = 'M-19 10 192-19 534-19 548 248 445 454 384 454 256 374 0 368-19 288Z';
+const pad = { x: touchpad.x * U, y: touchpad.y * U, w: touchpad.w * U, h: touchpad.h * U, c: 12 };
+const padPoints = [
+  [pad.x + pad.c, pad.y], [pad.x + pad.w - pad.c, pad.y], [pad.x + pad.w, pad.y + pad.c], [pad.x + pad.w, pad.y + pad.h - pad.c],
+  [pad.x + pad.w - pad.c, pad.y + pad.h], [pad.x + pad.c, pad.y + pad.h], [pad.x, pad.y + pad.h - pad.c], [pad.x, pad.y + pad.c],
+].map(([x, y]) => `${n(x)},${n(y)}`).join(' ');
+const arm = fiveWay.arm * U;
+const cross = `M${n(fiveWay.x * U - arm / 2)} ${n(fiveWay.y * U - arm * 1.5)}h${n(arm)}v${n(arm)}h${n(arm)}v${n(arm)}h${n(-arm)}v${n(arm)}h${n(-arm)}v${n(-arm)}h${n(-arm)}v${n(-arm)}h${n(arm)}z`;
+
+// The fold: the three letter rows. Left keys are block keys 7-11, 13-17 and 19-23; the right half
+// shows the same keys' blue letters, mirrored, which is the right half of Colemak.
+const foldRows = [1, 2, 3];
+const foldCols = [1, 2, 3, 4, 5];
+const foldKeys = foldRows.flatMap((r) => foldCols.map((c) => r * 6 + c));
+const foldMirror = foldRows.flatMap((r) => foldCols.map((c) => r * 6 + (6 - c)));
+// One half is drawn in percent of its own box, five keys by three, so the same drawing serves the
+// wide halves of a laptop and the flat ones of a phone; the letters keep their size in the style sheet.
+const GX = 1.1; // the gap between keys, in percent of the half's width
+const GY = 2.4; // and of its height
+const FW = (100 - 4 * GX) / 5;
+const FH = (100 - 2 * GY) / 3;
+// Each half's name is part of its drawing, on the line kept free above the keys.
+const name = (t: string) => `<text class="fn" x="0" y="0">${t}</text>`;
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+// kind: 'caps' keys with their letter top left, 'ghost' the empty places, 'blue' letters only, top right.
+const half = (keys: number[], slot: 'base' | 'blue', kind: 'caps' | 'ghost' | 'blue') =>
+  keys.map((k, i) => {
+    const x = (i % 5) * (FW + GX);
+    const y = Math.floor(i / 5) * (FH + GY);
+    const cap = kind === 'blue' ? '' : `<rect class="fk${kind === 'ghost' ? ' fk--ghost' : ''}" x="${n(x)}%" y="${n(y)}%" width="${n(FW)}%" height="${n(FH)}%" rx="6"/>`;
+    const letter = kind === 'ghost' ? '' : `<text class="fl${kind === 'blue' ? ' fl--blue' : ''}" x="${n(x + FW * (kind === 'blue' ? 0.86 : 0.14))}%" y="${n(y + FH * 0.12)}%" dy="0.85em" data-k="${k}" data-slot="${slot}">${esc(us[slot][k])}</text>`;
+    return cap + letter;
+  }).join('');
+---
+
+<section class="section" id="layout" aria-labelledby="layout-h">
+  <div class="wrap">
+    <div class="section-head section-head--row">
+      <div>
+        <h2 id="layout-h">How one hand types a full keyboard</h2>
+        <div class="tour-texts">
+          {
+            steps.map((s, i) => (
+              <p id={`tour-text-${s.id}`} role="tabpanel" aria-labelledby={`tour-tab-${s.id}`} hidden={i > 0}>
+                {s.text}
+              </p>
+            ))
+          }
+        </div>
+      </div>
+      <div class="tabs tour-steps" role="tablist" aria-label="Steps" data-tour-steps>
+        {
+          steps.map((s, i) => (
+            <button class="tab" type="button" role="tab" id={`tour-tab-${s.id}`} aria-selected={i === 0 ? 'true' : 'false'} aria-controls={`tour-text-${s.id}`} data-step={s.id}>
+              {s.label}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="grid fill">
+      <div class="frame frame--fill span-12 tour" data-visual data-tour data-step="fold" data-layer="all">
+        <div class="tabs tour-langs" role="tablist" aria-label="Legends" data-tour-langs>
+          {
+            langs.map((l, i) => (
+              <button class="tab" type="button" role="tab" aria-selected={i === 0 ? 'true' : 'false'} aria-label={l.name} data-lang={l.id} data-short={l.id === 'us' ? 'EN' : l.id.toUpperCase()}>
+                <span>{l.name}</span>
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="tour-screen">
+          <span class="tour-typed" data-typed></span><span class="tour-caret" aria-hidden="true"></span>
+        </div>
+
+        <div class="tour-fold is-folded" role="img" aria-label="The letter keys of a two-handed Colemak keyboard: the right hand's half folds onto the left hand's, so each left key holds two letters">
+          {/* The picture is named on its box above; the two still drawings stay readable to the page checks, the turning ones are hidden. */}
+          <div class="tour-fold__in">
+            <div class="tour-side">
+              <div class="tour-half">
+                <svg class="tour-keys" set:html={name('Left hand') + half(foldKeys, 'base', 'caps')} />
+              </div>
+            </div>
+            <div class="tour-side">
+              <div class="tour-half tour-half--right">
+                <svg class="tour-keys" set:html={name('Right hand') + half(foldKeys, 'base', 'ghost')} />
+                <div class="tour-flap">
+                  <div class="tour-face">
+                    <svg class="tour-keys" aria-hidden="true" set:html={half(foldMirror, 'blue', 'caps')} />
+                  </div>
+                  <div class="tour-face tour-face--back">
+                    <svg class="tour-keys" aria-hidden="true" set:html={half(foldKeys, 'blue', 'blue')} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tour-kb" tabindex="-1">
+          <svg viewBox="-30 -30 592 496" role="img" aria-label="MonoTypist from above: four rows of six keys, CTRL, ALT, a knob, three thumb keys, a touchpad and a 5-way switch">
+            <path class="kb-house" d={housing}></path>
+            <polygon class="kb-pad" points={padPoints}></polygon>
+            <circle class="kb-knob" cx={n(knob.x * U)} cy={n(knob.y * U)} r={n(knob.r * U)}></circle>
+            <circle class="kb-knob__top" cx={n(knob.x * U)} cy={n(knob.y * U)} r={n(knob.r * U * 0.62)}></circle>
+            <path class="kb-five" d={cross} transform={`rotate(${fiveWay.r} ${n(fiveWay.x * U)} ${n(fiveWay.y * U)})`}></path>
+
+            {
+              blockKeys.map((p, k) => (
+                <g transform={`translate(${n(p.x * U)} ${n(p.y * U)})`}>
+                  <g class="kb-key" data-key={`k${k}`}>
+                    <rect class="kb-cap" width={CAP} height={CAP} rx="8" />
+                    {caps[k]?.icon && <g class="lg lg--base" transform={k === 18 ? 'translate(17 17)' : 'translate(6 6) scale(.8)'} set:html={icons[caps[k].icon]} />}
+                    {caps[k]?.label && <text class="lg lg--base" x="29" y="25">{caps[k].label}</text>}
+                    {!caps[k] && <text class="lg lg--base" x="17" y="25" data-k={k} data-slot="base">{us.base[k]}</text>}
+                    {k >= 6 && <text class="lg lg--blue" x="41" y="25" data-k={k} data-slot="blue">{us.blue[k]}</text>}
+                    {us.red[k] === ' '
+                      ? <path class="lg lg--red kb-sp" d="M11 43v5h12v-5" />
+                      : <text class="lg lg--red" x="17" y="49" data-k={k} data-slot="red">{us.red[k]}</text>}
+                    <text class="lg lg--orange" x="41" y="49" data-k={k} data-slot="orange">{us.orange[k]}</text>
+                  </g>
+                </g>
+              ))
+            }
+
+            {
+              lowerKeys.map((key) => {
+                const h = (key.h ?? 1) * U - (U - CAP);
+                const turn = key.r ? `rotate(${key.r} ${n(key.rx * U)} ${n(key.ry * U)}) ` : '';
+                const hold = { enter: 'var(--k-red)', space: 'var(--k-blue)', delete: 'var(--k-orange)' }[key.id];
+                return (
+                  <g transform={`${turn}translate(${n(key.x * U)} ${n(key.y * U)})`}>
+                    <g class="kb-key" data-key={hold ? key.id : undefined} style={hold ? `--hold: ${hold}` : undefined}>
+                      <rect class="kb-cap" width={CAP} height={h} rx="8" />
+                      {key.label && <text class="kb-word" x="29" y="33">{key.label}</text>}
+                      {key.id === 'space' && <text class="kb-word kb-word--mono" x="29" y="29">Mono</text>}
+                      {(key.id === 'enter' || key.id === 'delete') && <g transform="translate(17 12)" set:html={icons[key.id]} />}
+                      {hold && <rect class="kb-bar" x={key.id === 'space' ? 13 : 19} y={key.id === 'space' ? 36 : 50} width={key.id === 'space' ? 32 : 20} height="4" rx="2" />}
+                    </g>
+                  </g>
+                );
+              })
+            }
+          </svg>
+        </div>
+
+        <button class="loop-pause" type="button" aria-label="Pause animation" title="Pause animation" data-tour-pause set:html={pauseIcon} />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  /* ---- the head: the step texts share one place, the steps sit in even rows ---- */
+  /* Every step's text lies in the same grid cell, so the tallest one sets the height and the
+     drawing below never moves when the step changes. */
+  .tour-texts { display: grid; }
+  .tour-texts > [role='tabpanel'] { grid-area: 1 / 1; }
+  .tour-texts > [role='tabpanel'][hidden] { display: block !important; visibility: hidden; }
+  /* The six steps in even rows, never one left over: three by two on a phone, one row of six on a
+     tablet, three by two beside the text on a laptop. */
+  .tabs.tour-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; max-width: none; } /* the kit caps every block in this heading at 760px */
+  .tour-steps .tab { white-space: nowrap; padding: 0 var(--s-2); }
+  @media (max-width: 359px) {
+    .tabs.tour-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 639px) {
+    /* Tighter, and the words one size down, so the heading, the steps and the drawing share one screen. */
+    #layout .section-head--row { gap: var(--s-3); }
+    .tabs.tour-steps { row-gap: var(--s-1); }
+    #layout .section-head p { font-size: var(--t-body); }
+  }
+  @media (min-width: 768px) {
+    .tabs.tour-steps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1024px) {
+    /* The heading across the top, the step's words under it on the left, the steps on the right. */
+    #layout .section-head--row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4) var(--s-6); align-items: start; }
+    #layout .section-head--row > div:first-child { display: contents; }
+    #layout .section-head--row h2 { grid-column: 1 / -1; }
+    .tabs.tour-steps { width: auto; grid-template-columns: repeat(3, auto); }
+    .tour-steps .tab { padding: 0 var(--s-3); }
+  }
+  @media (min-width: 1280px) {
+    .tour-steps .tab { padding: 0 var(--s-4); }
+  }
+
+  /* ---- the frame: language switch and typed text above the drawing; beside it on a laptop ---- */
+  .tour {
+    --k-cap: #fbfaf9; --k-blue: #2f62d6; --k-red: #9c1c30; --k-orange: #dd5a1f;
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch; justify-content: stretch; gap: var(--s-3); padding: var(--s-4);
+  }
+  .tour::before { display: none; }
+  .tour-langs { grid-area: 1 / 1; flex-wrap: nowrap; align-self: center; }
+  .tour-screen { grid-area: 1 / 2; }
+  .tour-kb, .tour-fold { grid-area: 2 / 1 / 3 / 3; min-height: 0; }
+  .tour[data-step='fold'] :is(.tour-screen, .tour-kb),
+  .tour:not([data-step='fold']) .tour-fold { display: none; }
+  .tour .loop-pause[hidden] { display: none; }
+  @media (max-width: 639px) {
+    /* On a phone the drawing sets the frame's height, the same for every step. */
+    #layout .grid.fill > .tour { flex: 1 0 auto; }
+    .tour { padding: var(--s-3); gap: var(--s-2); }
+    .tour-kb, .tour-fold { aspect-ratio: 592 / 496; }
+    .tour-langs .tab { padding: 0 var(--s-3); }
+    .tour-langs .tab > span { display: none; }
+    .tour-langs .tab::after { content: attr(data-short); }
+  }
+  @media (min-width: 1024px) {
+    .tour { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-4) var(--s-5); padding: var(--s-5); }
+    .tour-langs { justify-self: start; }
+    .tour-screen { grid-area: 2 / 1; }
+    .tour-kb { grid-area: 1 / 2 / 3 / 3; }
+  }
+
+  /* ---- what gets typed ---- */
+  .tour-screen {
+    display: flex; align-items: center; justify-content: center; min-height: 44px; overflow: hidden;
+    background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md);
+    font-family: var(--font-mono); font-size: 22px; font-weight: 500; line-height: 1; white-space: pre; color: var(--ink);
+  }
+  .tour-typed { transition: opacity 300ms ease-out; }
+  .tour-typed.is-dim { opacity: 0.25; }
+  .tour-caret { flex: none; width: 0.09em; height: 1.05em; margin-left: 0.08em; background: var(--ink); }
+  .tour[data-step='try'] .tour-typed:empty::before { content: 'Press a key'; color: var(--muted); font-family: var(--font-text); font-size: max(14px, 0.45em); }
+  .tour:has(.tour-kb:focus) .tour-screen { border-color: var(--ink); }
+  @media (min-width: 640px) { .tour-screen { font-size: 28px; } }
+  @media (min-width: 1024px) { .tour-screen { font-size: clamp(40px, 4.4vw, 64px); } }
+
+  /* ---- step 1: the fold ---- */
+  .tour-fold { display: grid; place-items: center; container-type: inline-size; }
+  .tour-fold__in {
+    --fg: clamp(8px, 2.4cqw, 24px);
+    width: min(100%, 1120px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--fg);
+  }
+  @media (min-width: 1024px) {
+    /* As wide as the frame's height allows: three rows of keys and the line of names. */
+    .tour-fold { container-type: size; }
+    .tour-fold__in { width: min(100%, 1120px, (100cqh - 40px) * 4); }
+  }
+  .tour-side { padding-top: 24px; } /* the line of the half's name, 16px, and 8px under it */
+  .fn { font: var(--t-label) var(--font-mono); fill: var(--muted); transform: translateY(-12px); }
+  .tour-half { position: relative; aspect-ratio: 524 / 252; }
+  .tour-half--right { perspective: 1600px; }
+  .tour-keys { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .fk { fill: var(--k-cap); stroke: var(--line); stroke-width: 1; }
+  .fk--ghost { fill: none; stroke: var(--line-strong); stroke-dasharray: 3 3; }
+  .fl { font: 600 clamp(11px, 2.3cqw, 24px) / 1 var(--font-text); fill: var(--ink); }
+  .fl--blue { fill: var(--k-blue); text-anchor: end; }
+  /* The right half is a flap hinged on the middle line. Its front shows the right hand's letters;
+     its back shows the same letters in blue where they land on the left hand's keys. */
+  .tour-flap {
+    position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: calc(var(--fg) / -2) 50%;
+    transition: transform 1100ms cubic-bezier(0.65, 0, 0.25, 1);
+  }
+  .tour-face { position: absolute; inset: 0; backface-visibility: hidden; transition: opacity 300ms ease-out; }
+  .tour-face--back { transform: rotateY(180deg); }
+  .tour-fold.is-folded .tour-flap { transform: rotateY(-180deg); }
+  .tour-fold.is-out .tour-face { opacity: 0; }
+  .tour-fold.is-snap .tour-flap { transition: none; }
+  @media (max-width: 1023px) {
+    /* A phone or an upright tablet is too narrow for the halves side by side: the right half sits
+       under the left one, turns over and rises onto it. Turned over, its letters are mirrored the same way. */
+    .tour-fold__in { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .tour-side { padding-top: 20px; }
+    .fn { transform: translateY(-8px); }
+    .tour-flap { transform-origin: 50% 50%; }
+    .tour-fold.is-folded .tour-flap { transform: translateY(calc(-100% - 30px)) rotateY(-180deg); } /* 30px: the gap and the line of the name */
+    /* The stacked halves reach the frame's foot, so the pause button moves up beside the languages. */
+    .tour[data-step='fold'] .loop-pause { top: 18px; bottom: auto; }
+  }
+  @media (max-width: 639px) {
+    .tour-half { aspect-ratio: 316 / 106; }
+    .fl { font-size: 14px; }
+  }
+  @media (min-width: 640px) and (max-width: 1023px) {
+    /* As wide as the frame's height allows: twice a half and the line of its name, and the gap. */
+    .tour-fold { container-type: size; }
+    .tour-fold__in { width: min(100%, (100cqh - 50px) * 1.04); }
+    .fl { font-size: 20px; }
+    .tour[data-step='fold'] .loop-pause { right: var(--s-4); }
+  }
+
+  /* ---- steps 2 to 6: the keyboard ---- */
+  .tour-kb { position: relative; border-radius: var(--r-md); }
+  .tour-kb > svg { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .tour[data-step='try'] .kb-key[data-key] { cursor: pointer; }
+  .kb-house { fill: var(--ink); stroke: var(--ink); stroke-width: 16; stroke-linejoin: round; }
+  .kb-pad { fill: color-mix(in oklab, var(--ink) 86%, #fff); stroke: rgb(255 255 255 / 0.3); stroke-width: 1.5; }
+  .kb-knob { fill: #a9a7a5; }
+  .kb-knob__top, .kb-five { fill: #cfcdcb; }
+  .kb-five { stroke: #cfcdcb; stroke-width: 4; stroke-linejoin: round; }
+  .kb-key { color: var(--ink); transition: transform 90ms ease-out; }
+  .kb-cap { fill: var(--k-cap); transition: fill 120ms ease-out; }
+  .kb-bar { fill: var(--hold); }
+  .kb-ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .kb-ic-fill { fill: currentColor; }
+  .kb-ic-cut { fill: none; stroke: var(--k-cap); stroke-width: 2; stroke-linecap: round; }
+  .kb-word { font: 600 11px var(--font-text); letter-spacing: 0.02em; text-anchor: middle; fill: currentColor; }
+  .kb-word--mono { font-size: 14px; font-weight: 700; letter-spacing: 0; }
+  /* A key going down turns the housing's pink; a held thumb key takes the colour of its layer. */
+  .kb-key.is-down, .kb-key.is-held { transform: translateY(2px); }
+  .kb-key.is-down > .kb-cap { fill: var(--accent); }
+  .kb-key.is-down .kb-ic-cut { stroke: var(--accent); }
+  .kb-key.is-held { color: #fff; }
+  .kb-key.is-held > .kb-cap { fill: var(--hold); }
+  .kb-key.is-held .kb-bar { fill: #fff; }
+  .kb-key.is-held .kb-ic-cut { stroke: var(--hold); }
+  /* The four legends of a key, as on the Detailed keycaps: black and blue above, red and orange below. */
+  .lg { font: 600 17px var(--font-text); text-anchor: middle; fill: currentColor; transition: opacity 200ms ease-out; }
+  .lg--blue { color: var(--k-blue); }
+  .lg--red { color: var(--k-red); }
+  .lg--orange { color: var(--k-orange); }
+  .kb-sp { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  /* The layer in use stays at full strength, the others step back. */
+  .tour[data-layer='base'] .lg:not(.lg--base),
+  .tour[data-layer='blue'] .lg:not(.lg--blue),
+  .tour[data-layer='red'] .lg:not(.lg--red),
+  .tour[data-layer='orange'] .lg:not(.lg--orange) { opacity: 0.22; }
+  @media (max-width: 639px) {
+    .lg { font-size: 20px; } /* the drawing is half its size on a phone */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tour-flap, .tour-face, .tour-typed, .kb-key, .kb-cap, .lg { transition: none; }
+  }
+</style>
+
+<script>
+  import { legends, thumbLayer } from '../data/keyboard';
+
+  const frame = document.querySelector('[data-tour]');
+  if (frame) {
+    const stepTabs = document.querySelector('[data-tour-steps]');
+    const langTabs = frame.querySelector('[data-tour-langs]');
+    const fold = frame.querySelector('.tour-fold');
+    const kb = frame.querySelector('.tour-kb');
+    const typedEl = frame.querySelector('[data-typed]');
+    const pauseBtn = frame.querySelector('[data-tour-pause]');
+    const still = matchMedia('(prefers-reduced-motion: reduce)');
+    const blockEls = Array.from({ length: 24 }, (_, k) => frame.querySelector(`[data-key="k${k}"]`));
+    const thumbEls = Object.keys(thumbLayer).map((id) => [id, frame.querySelector(`[data-key="${id}"]`)]);
+    const PAUSE = pauseBtn.innerHTML;
+    const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.25 3.7v8.6c0 .62.68 1 1.2.66l6.5-4.3c.47-.31.47-1 0-1.32l-6.5-4.3c-.52-.34-1.2.04-1.2.66Z"/></svg>';
+    const MAX = 10; // characters the typed line keeps
+
+    let lang = 'us';
+    let step = 'fold';
+    let paused = false;
+    let frames = []; // the running step's loop: [milliseconds, what to draw]
+    let at = 0;
+    let timer = 0;
+    let running = false;
+
+    // The character block key k types on a layer; letters come out in lower case.
+    const ch = (k, layer) => {
+      const s = legends[lang][layer][k] || '';
+      return s.length === 1 ? s.toLowerCase() : s;
+    };
+
+    // Draws one picture of the keyboard: the layer in use, the thumb key held, the keys down, the typed text.
+    function show(s) {
+      frame.dataset.layer = s.layer;
+      thumbEls.forEach(([id, el]) => el.classList.toggle('is-held', s.held === id));
+      blockEls.forEach((el, k) => el.classList.toggle('is-down', s.down.includes(k)));
+      typedEl.textContent = s.text;
+      typedEl.classList.toggle('is-dim', !!s.dim);
+    }
+
+    // Turns a short script into the pictures of a loop. The last picture is the finished one: the
+    // loop starts from it, rests on it, and it is the still picture when motion is off.
+    function build(rest, ops) {
+      const out = [];
+      let held = null;
+      let text = '';
+      const add = (ms, extra) => out.push([ms, { layer: held ? thumbLayer[held] : rest, held, text, down: [], dim: false, ...extra }]);
+      for (const [op, a, b] of ops) {
+        if (op === 'clear') { add(350, { dim: true }); text = ''; add(400); }
+        else if (op === 'hold') { held = a; add(480); }
+        else if (op === 'release') { held = null; add(700); }
+        else if (op === 'key') { text += ch(a, held ? thumbLayer[held] : 'base'); add(170, { down: [a] }); add(330); }
+        else if (op === 'both') { held = a; text += ch(b, thumbLayer[a]); add(1700, { down: [b] }); held = null; }
+        else if (op === 'rest') add(a);
+      }
+      const last = out[out.length - 1][1];
+      out[0][1] = { ...last, held: null, layer: rest, down: [], dim: true }; // the loop restarts by dimming the finished text
+      return out;
+    }
+
+    // Block keys by number: 10 P, 13 A, 14 R, 15 S, 16 T, 17 D, 21 C.
+    const stories = {
+      tap: () => build('base', [['clear'], ['key', 16], ['key', 13], ['key', 10], ['rest', 1700]]),
+      space: () => build('all', [['clear'], ['hold', 'space'], ['key', 17], ['key', 14], ['release'], ['clear'], ['key', 16], ['both', 'space', 13]]),
+      enter: () => build('all', [['clear'], ['hold', 'enter'], ['key', 14], ['key', 21], ['rest', 1700]]),
+      delete: () => build('all', [['clear'], ['hold', 'delete'], ['key', 14], ['key', 10], ['key', 15], ['rest', 1700]]),
+    };
+
+    // The fold's loop: the flap fades, jumps back open, fades in, folds over and rests.
+    const foldFrames = [
+      [320, () => fold.classList.add('is-out')],
+      [60, () => { fold.classList.add('is-snap'); fold.classList.remove('is-folded'); }],
+      [1500, () => fold.classList.remove('is-snap', 'is-out')],
+      [3600, () => fold.classList.add('is-folded')],
+    ];
+    function foldDone() {
+      fold.classList.add('is-snap', 'is-folded');
+      fold.classList.remove('is-out');
+      void fold.offsetWidth;
+      fold.classList.remove('is-snap');
+    }
+
+    function tick() {
+      if (!running) return;
+      const [ms, draw] = frames[at];
+      at = (at + 1) % frames.length;
+      draw();
+      timer = setTimeout(tick, ms);
+    }
+    function stop() { running = false; clearTimeout(timer); }
+    function play(delay) {
+      stop();
+      if (paused || still.matches || !frames.length) return;
+      running = true;
+      timer = setTimeout(tick, delay);
+    }
+
+    // ---- step 6: the visitor types ----
+    // By position: the five keys from Q, A and Z (and 1 to 5 above them) stand for the block's keys.
+    const CODES = { Digit1: 1, Digit2: 2, Digit3: 3, Digit4: 4, Digit5: 5, KeyQ: 7, KeyW: 8, KeyE: 9, KeyR: 10, KeyT: 11, Backspace: 12, KeyA: 13, KeyS: 14, KeyD: 15, KeyF: 16, KeyG: 17, KeyZ: 19, KeyX: 20, KeyC: 21, KeyV: 22, KeyB: 23 };
+    const THUMBS = { Space: 'space', Enter: 'enter', Delete: 'delete' };
+    const T = { text: '', down: new Set(), held: [], latch: null, used: false, last: null };
+    const heldNow = () => T.held[T.held.length - 1] || T.latch;
+    const drawTry = () => { const h = heldNow(); show({ layer: h ? thumbLayer[h] : 'all', held: h, down: [...T.down], text: T.text, dim: false }); };
+    function resetTry() { T.text = ''; T.down.clear(); T.held = []; T.latch = null; T.used = false; T.last = null; }
+    function press(k) {
+      const h = heldNow();
+      if (h) T.used = true;
+      if (k === 12 && !h) { T.text = T.text.slice(0, -1); T.last = null; return; } // Backspace
+      const c = ch(k, h ? thumbLayer[h] : 'base');
+      if (!c) return;
+      T.text = (T.text + c).slice(-MAX);
+      T.last = { k, n: c.length, t: performance.now() };
+    }
+    // A thumb key tapped alone: Space types a space, Enter starts a new line, Delete has nothing after the caret to remove.
+    function tapThumb(id) {
+      if (id === 'space') T.text = (T.text + ' ').slice(-MAX);
+      if (id === 'enter') T.text = '';
+    }
+    kb.addEventListener('keydown', (e) => {
+      if (step !== 'try' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const id = THUMBS[e.code];
+      const k = CODES[e.code];
+      if (!id && k === undefined) return; // Tab, Escape and the rest keep their own jobs
+      e.preventDefault();
+      if (e.repeat) return;
+      if (id) {
+        T.latch = null;
+        if (!T.held.includes(id)) T.held.push(id);
+        T.used = false;
+        // Pressed together with a key that went down a moment earlier and is still down: that key's character moves to this layer.
+        if (T.last && T.down.has(T.last.k) && performance.now() - T.last.t < 60) {
+          const c = ch(T.last.k, thumbLayer[id]);
+          if (c) T.text = (T.text.slice(0, -T.last.n) + c).slice(-MAX);
+          T.used = true;
+          T.last = null;
+        }
+      } else {
+        T.down.add(k);
+        press(k);
+      }
+      drawTry();
+    });
+    kb.addEventListener('keyup', (e) => {
+      if (step !== 'try') return;
+      const id = THUMBS[e.code];
+      const k = CODES[e.code];
+      if (id) {
+        const i = T.held.indexOf(id);
+        if (i < 0) return;
+        T.held.splice(i, 1);
+        if (!T.used) tapThumb(id);
+      } else if (k !== undefined) T.down.delete(k);
+      else return;
+      drawTry();
+    });
+    kb.addEventListener('blur', () => { if (step !== 'try') return; T.held = []; T.down.clear(); drawTry(); });
+    // With a mouse or a finger: a thumb key stays down for the next key; tapped twice, it types its own character.
+    kb.addEventListener('pointerdown', (e) => {
+      if (step !== 'try') return;
+      const el = e.target.closest('[data-key]');
+      if (!el) return;
+      const id = el.dataset.key;
+      if (id in thumbLayer) {
+        if (T.latch === id) { T.latch = null; tapThumb(id); } else T.latch = id;
+      } else {
+        const k = Number(id.slice(1));
+        T.down.add(k);
+        press(k);
+        setTimeout(() => { T.down.delete(k); T.latch = null; if (step === 'try') drawTry(); }, 180);
+      }
+      drawTry();
+    });
+
+    // ---- steps, languages, pause ----
+    function go(next, delay = 700) {
+      stop();
+      step = next;
+      at = 0;
+      frame.dataset.step = step;
+      resetTry();
+      if (step === 'fold') { frames = foldFrames; foldDone(); }
+      else if (step === 'try') { frames = []; drawTry(); }
+      else {
+        const pictures = stories[step]();
+        frames = pictures.map(([ms, s]) => [ms, () => show(s)]);
+        show(pictures[pictures.length - 1][1]);
+      }
+      const live = step === 'try';
+      pauseBtn.hidden = live;
+      kb.tabIndex = live ? 0 : -1;
+      typedEl.parentElement.setAttribute('aria-live', live ? 'polite' : 'off');
+      if (live) {
+        kb.setAttribute('role', 'application');
+        kb.setAttribute('aria-label', 'Keyboard to try: press the five keys from Q, A or Z, and hold Space, Enter or Delete');
+      } else {
+        kb.removeAttribute('role');
+        kb.removeAttribute('aria-label');
+      }
+      play(delay);
+    }
+    function relabel() {
+      frame.querySelectorAll('[data-slot]').forEach((el) => {
+        el.textContent = legends[lang][el.dataset.slot][Number(el.dataset.k)] || '';
+      });
+    }
+    function drawPause() {
+      const label = `${paused ? 'Play' : 'Pause'} animation`;
+      pauseBtn.innerHTML = paused ? PLAY : PAUSE;
+      pauseBtn.setAttribute('aria-label', label);
+      pauseBtn.title = label;
+    }
+    pauseBtn.addEventListener('click', () => { paused = !paused; drawPause(); if (paused) stop(); else play(0); });
+
+    // The kit's script switches the tabs (by click or by arrow key); this one follows the selected tab.
+    const chosen = (list) => list.querySelector('[role="tab"][aria-selected="true"]');
+    const follow = (list, act) => new MutationObserver(act).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    follow(stepTabs, () => {
+      const t = chosen(stepTabs);
+      if (!t || t.dataset.step === step) return;
+      go(t.dataset.step);
+    });
+    follow(langTabs, () => { const t = chosen(langTabs); if (t && t.dataset.lang !== lang) { lang = t.dataset.lang; relabel(); go(step); } });
+    // A click on "Try the keys" puts the visitor's keyboard on the drawing straight away.
+    stepTabs.addEventListener('click', (e) => { if (e.detail > 0 && e.target.closest('[data-step="try"]')) kb.focus({ preventScroll: true }); });
+    still.addEventListener('change', () => go(step));
+
+    go('fold', 1500);
+  }
+</script>

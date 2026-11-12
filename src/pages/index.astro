@@ -1,11 +1,13 @@
 ---
 // The home page. Sections follow the design kit's recipes (plan: .taste-skill/plan.md):
 // hero, #layout, #controls, #options (dark band), #practice, #questions, #order (last).
+// #layout, the animated tour of the keys, is its own file: src/components/KeyboardTour.astro.
 // The light pink housing is a recoloured photograph of the black one until real photos exist.
 //
 // Every section holds one block with the class "fill" (a photograph, a row of cards). That block takes
 // the height the screen leaves, which is how each section comes out exactly one or two screens tall.
 import Base from '../layouts/Base.astro';
+import KeyboardTour from '../components/KeyboardTour.astro';
 import { mainAction } from '../data/site';
 
 const img = '/img/product';
@@ -13,9 +15,6 @@ const formAddress = 'https://formspree.io/f/xrpzbbdz';
 // The hero picture in two sizes: the small file is enough for a phone.
 const heroSet = `${img}/hero-pair-1200.webp 1200w, ${img}/hero-pair.webp 2400w`;
 const heroSizes = '(max-width: 639px) 100vw, 92vw';
-// How wide the two keycap photographs are drawn: side by side on a laptop, stacked below that. On a phone
-// each fills a tall frame, so it is drawn about twice as wide as the screen and cropped.
-const pairSizes = '(max-width: 639px) 200vw, (max-width: 1023px) 92vw, 45vw';
 
 const controls = [
   {
@@ -112,26 +111,7 @@ const options = [
     </div>
   </section>
 
-  <section class="section" id="layout" aria-labelledby="layout-h" style="--hm: 2">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 id="layout-h">How one hand types a full keyboard</h2>
-        <p>
-          The left half of the Colemak layout sits under your fingers. Hold Space, or press it together with a key, and that key
-          types its mirror from the right half with the same finger. Hold Enter for numbers and Delete for symbols. Detailed
-          keycaps print all of it, Minimal keycaps the letters only.
-        </p>
-      </div>
-      <div class="grid fill">
-        <div class="frame frame--photo frame--fill span-6">
-          <img class="frame__img" src={`${img}/detail-legends.webp`} srcset={`${img}/detail-legends-800.webp 800w, ${img}/detail-legends.webp 1400w`} sizes={pairSizes} alt="Detailed keycaps: a black letter, a blue letter, a red number and a symbol on each key" width="1400" height="1050" loading="lazy" decoding="async" />
-        </div>
-        <div class="frame frame--photo frame--fill span-6">
-          <img class="frame__img" src={`${img}/detail-legends-minimal.webp`} srcset={`${img}/detail-legends-minimal-800.webp 800w, ${img}/detail-legends-minimal.webp 1400w`} sizes={pairSizes} alt="Minimal keycaps: two letters on each key" width="1400" height="1050" loading="lazy" decoding="async" />
-        </div>
-      </div>
-    </div>
-  </section>
+  <KeyboardTour />
 
   <section class="section" id="controls" aria-labelledby="controls-h" style="--hm: 2">
     <div class="wrap">
