@@ -1,42 +1,24 @@
 ---
-// Stand-in for a page that a later milestone builds.
+// A plain page: one heading, one lead line, then whatever the page passes in.
+// Pages that a later milestone builds also pass "milestone" and get a "not open yet" line.
 interface Props {
   title: string;
+  lead?: string;
   milestone?: string;
 }
 
-const { title, milestone } = Astro.props;
+const { title, lead, milestone } = Astro.props;
 ---
 
-<section class="container placeholder">
-  <h1>{title}</h1>
-  <p class="lead"><slot /></p>
-  {milestone && <p class="note">This page is not built yet. It is planned for milestone {milestone}.</p>}
+<section class="section" aria-labelledby="page-h">
+  <div class="wrap">
+    <div class="section-head">
+      <h1 id="page-h">{title}</h1>
+      {lead && <p>{lead}</p>}
+    </div>
+    <div class="stack-4">
+      <slot />
+      {milestone && <p class="t-small muted">This page is not open yet.{import.meta.env.DEV && ` (Planned for milestone ${milestone}; this note shows in the dev server only.)`}</p>}
+    </div>
+  </div>
 </section>
-
-<style>
-  .placeholder {
-    padding-block: var(--space-6);
-  }
-
-  h1 {
-    font-size: var(--text-xl);
-  }
-
-  .lead {
-    max-width: 40rem;
-    margin-top: var(--space-3);
-    font-size: var(--text-lg);
-    color: var(--color-ink-muted);
-  }
-
-  .note {
-    display: inline-block;
-    margin-top: var(--space-4);
-    padding: var(--space-2) var(--space-3);
-    border: 1px dashed var(--color-line);
-    border-radius: var(--radius);
-    font-size: var(--text-sm);
-    color: var(--color-ink-muted);
-  }
-</style>

@@ -1,38 +1,106 @@
 ---
-import '../styles/global.css';
+// The frame every page shares: head, fixed nav, footer, phone action bar.
+//
+// The look comes from the design kit in public/assets (copied unchanged from the design-taste-frontend
+// skill; do not edit those files, the skill's checker compares them). This file loads the kit as plain
+// files, in the order the kit asks for, so every <style> and <script> here is "is:inline": Astro must
+// not bundle or reorder them.
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { mainAction, link } from '../data/site';
 
 interface Props {
   title?: string;
   description?: string;
+  /** true on the home page only: section links stay "#id" instead of "/#id" */
+  home?: boolean;
 }
 
-const { title, description = 'MonoTypist is a keyboard you type on with one hand.' } = Astro.props;
-const pageTitle = title ? `${title} | MonoTypist` : 'MonoTypist, the one-handed keyboard';
+const {
+  title,
+  description = 'Every letter, number and symbol on 29 keys under your left hand. MonoTypist is built to order, and the waitlist is open.',
+  home = false,
+} = Astro.props;
+const pageTitle = title ? `${title} | MonoTypist` : 'MonoTypist: a mechanical keyboard for one hand';
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const shareImage = new URL('/share.jpg', Astro.site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-type="product" data-radius="soft" data-buttons="block" data-motion>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={shareImage} />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#faf8f8" />
+    <meta name="theme-color" content="#f6f4f3" />
+    <link rel="canonical" href={canonical} />
+    <meta name="site-kind" content="tech" />
+    <meta name="page-type" content="product" />
+
+    <!-- Fonts are stored in this repo (public/fonts, SIL Open Font License), never loaded from Google. -->
+    <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+    <link rel="stylesheet" href="/assets/system.css" />
+    <link rel="stylesheet" href="/assets/ui/cards.css" />
+    <link rel="stylesheet" href="/assets/motion/motion.css" />
+    <link rel="stylesheet" href="/assets/backgrounds/backgrounds.css" />
+    <link rel="stylesheet" href="/assets/layout/layout.css" />
+    <link rel="stylesheet" href="/assets/icons/icon.css" />
+    <!-- Colours and type, exactly as the kit's start.mjs printed them for the brand colours. Change them there, not by hand. -->
+    <style is:inline>
+      :root {
+        --p-bg: #f6f4f3; --p-surface: #eae8e7; --p-ink: #1c1b1f; --p-muted: #666567;
+        --p-accent: #f5c6d3; --p-accent-ink: #111111; --p-action: #1c1b1f; --p-action-ink: #f6f4f3;
+        --p-inv-bg: #1c1b1f; --p-inv-surface: #28272b; --p-inv-ink: #f6f4f3; --p-inv-muted: #9b999b;
+        --p-inv-accent: #f5c6d3; --p-inv-accent-ink: #111111; --p-inv-action: #f5c6d3; --p-inv-action-ink: #111111;
+        --font-display: "Geist", system-ui, sans-serif;
+        --font-text: "Geist", system-ui, sans-serif;
+        --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        --display-weight: 500;
+        --display-tracking: -0.035em;
+        --display-tracking-xl: -0.045em;
+      }
+    </style>
+    <link rel="stylesheet" href="/assets/ui/base.css" />
+    <script is:inline>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+    <script is:inline src="/assets/backgrounds/backgrounds.js"></script>
+    <script is:inline>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+    <link rel="modulepreload" href="/assets/moments/moments.js" />
+    <link rel="modulepreload" href="/assets/moments/lib.js" />
+    <link rel="modulepreload" href="/assets/moments/word-highlight/moment.js" />
+    <!-- Page CSS: only what sits inside a picture and the kit lacks. -->
+    <style is:inline>
+      .logo { display: block; height: 26px; aspect-ratio: var(--logo-ratio); background: currentColor;
+        -webkit-mask: var(--logo-src) center / contain no-repeat; mask: var(--logo-src) center / contain no-repeat; }
+      .menu-card .panel { --p-h: 200px; }
+    </style>
+    <slot name="head" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <Header />
-    <main id="main">
+    <!-- deal: hero product; palette brand (black and light pink housings on warm off-white); type geist; moment word-highlight;
+         nav nav-cards; footer footer-columns; close close-type; rhythm dark-band; buttons block; mark stack (the client's own
+         wordmark in its place); radius soft -->
+    <Header home={home} />
+    <main id="top">
       <slot />
     </main>
-    <Footer />
+    <Footer home={home} />
+    <nav class="actionbar" aria-label="Quick actions">
+      <a class="btn btn--primary" href={link(mainAction.href, home)}>{mainAction.label}</a>
+    </nav>
+    <script is:inline type="module" src="/assets/system.js"></script>
+    <script is:inline type="module" src="/assets/motion/motion.js"></script>
+    <script is:inline type="module" src="/assets/layout/layout.js"></script>
+    <slot name="scripts" />
   </body>
 </html>

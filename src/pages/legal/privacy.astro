@@ -3,6 +3,14 @@ import Base from '../../layouts/Base.astro';
 import Placeholder from '../../components/Placeholder.astro';
 ---
 
-<Base title="Privacy">
-  <Placeholder title="Privacy" milestone="M3">What data this site collects and why.</Placeholder>
+<Base title="Privacy" description="What the MonoTypist website collects, why, and how to have it removed.">
+  <Placeholder title="Privacy" lead="This site collects one thing: what you type into the waitlist form.">
+    <p>
+      The waitlist form sends your email address and the options you picked to Formspree, the form service we use. We use them for
+      one purpose: to email you when ordering opens.
+    </p>
+    <p>The site sets no cookies, runs no analytics and loads its fonts from its own server.</p>
+    <p>To leave the waitlist, reply to any email we send you and we delete your entry.</p>
+    <p class="t-small muted">The full privacy notice, with the company details, is published here before ordering opens.</p>
+  </Placeholder>
 </Base>

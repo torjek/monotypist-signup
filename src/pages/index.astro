@@ -1,8 +1,327 @@
 ---
+// The home page. Sections follow the design kit's recipes (plan: .taste-skill/plan.md):
+// hero, #layout, #controls, #options (dark band), #practice, #questions, #order (last).
+// The light pink housing is a recoloured photograph of the black one until real photos exist.
+//
+// Every section holds one block with the class "fill" (a photograph, a row of cards). That block takes
+// the height the screen leaves, which is how each section comes out exactly one or two screens tall.
 import Base from '../layouts/Base.astro';
-import Placeholder from '../components/Placeholder.astro';
+import { mainAction } from '../data/site';
+
+const img = '/img/product';
+const formAddress = 'https://formspree.io/f/xrpzbbdz';
+// The hero picture in two sizes: the small file is enough for a phone.
+const heroSet = `${img}/hero-pair-1200.webp 1200w, ${img}/hero-pair.webp 2400w`;
+const heroSizes = '(max-width: 639px) 100vw, 92vw';
+// How wide the two keycap photographs are drawn: side by side on a laptop, stacked below that. On a phone
+// each fills a tall frame, so it is drawn about twice as wide as the screen and cropped.
+const pairSizes = '(max-width: 639px) 200vw, (max-width: 1023px) 92vw, 45vw';
+
+const controls = [
+  {
+    title: 'Knob',
+    text: 'Turn the knob beside ALT for Page Down one way and Page Up the other.',
+    src: `${img}/detail-knob.webp`,
+    alt: 'The scroll knob next to the ALT key',
+    size: 614,
+  },
+  {
+    title: '5-way switch',
+    text: 'Push the cross-shaped switch to move the cursor up, down, left or right.',
+    src: `${img}/detail-switch.webp`,
+    alt: 'The cross-shaped five-way switch',
+    size: 574,
+  },
+  {
+    title: 'Touchpad',
+    text: 'Slide a finger on the touchpad beside the keys to move the mouse pointer.',
+    src: `${img}/detail-touchpad.webp`,
+    alt: 'The touchpad set into the housing',
+    size: 800,
+    srcset: `${img}/detail-touchpad-480.webp 480w, ${img}/detail-touchpad.webp 800w`,
+  },
+];
+
+const options = [
+  { name: 'Black or light pink housing', value: '2 colours' },
+  { name: 'Detailed or Minimal keycaps', value: '2 sets' },
+  { name: 'English, Danish or Hungarian legends', value: '3 languages' },
+  { name: 'NuPhy tactile or linear switches', value: '2 types' },
+];
 ---
 
-<Base>
-  <Placeholder title="MonoTypist" milestone="M1">A keyboard you type on with one hand.</Placeholder>
+<Base home>
+  <Fragment slot="head">
+    <link rel="preload" as="image" href={`${img}/hero-pair.webp`} imagesrcset={heroSet} imagesizes={heroSizes} type="image/webp" fetchpriority="high" />
+    <style is:inline>
+      /* A cut-out stands on the ground with no box, as in the hero. */
+      .frame--cutout { background: none; border-radius: 0; }
+      .frame--cutout > .frame__img { object-fit: contain; }
+      /* The least height of a control card's picture; the cards stretch to the foot of the screen. */
+      #controls .panel { --p-h: 200px; }
+      /* On a small laptop the kit puts cards with a picture two in a row, which leaves the third alone
+         on a row of its own. These three hold photographs, which stay readable when narrow, so they stay three in a row. */
+      @media (min-width: 1024px) and (max-width: 1279px) {
+        #controls .grid > .card.span-4 { grid-column: auto / span 4; }
+        #controls .panel { --p-h: 140px; }
+      }
+      /* On a tablet the three control cards stack, so that section takes two screens. */
+      @media (min-width: 640px) and (max-width: 1023px) {
+        #controls { --h: 2; }
+        #controls .panel { --p-h: 300px; }
+      }
+      @media (max-width: 639px) {
+        #controls .panel { --p-h: 165px; }
+        /* On a very narrow phone the words take more lines than one screen holds: the section grows
+           with them (the kit's "fill" block alone would run into the next section). */
+        main > .section > .wrap > .grid.fill { min-height: auto; }
+        /* The three questions leave the photograph a little under the kit's least height on a 390px phone. */
+        #questions .grid.fill > .frame--fill { min-height: 180px; }
+      }
+    </style>
+  </Fragment>
+
+  <section class="hero hero--product" data-enter aria-labelledby="hero-h">
+    <div class="wrap">
+      <div class="hero-text hero__in">
+        <div class="hero__head">
+          <div>
+            <h1 id="hero-h">A keyboard for one hand</h1>
+            <p class="hero__lead">
+              MonoTypist is a mechanical keyboard with every letter, number and symbol on 29 keys under your left hand.
+            </p>
+          </div>
+          <div class="btn-row">
+            <a class="btn btn--primary" href={mainAction.href}>{mainAction.label}</a>
+            <a class="btn btn--secondary" href="#layout">See how it types</a>
+          </div>
+        </div>
+        <div class="hero__stage">
+          <img
+            class="is-cutout"
+            src={`${img}/hero-pair.webp`}
+            srcset={heroSet}
+            sizes={heroSizes}
+            alt="Two MonoTypist keyboards: a black housing with Detailed keycaps and a light pink housing with Minimal keycaps"
+            width="2400"
+            height="1016"
+            fetchpriority="high"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="layout" aria-labelledby="layout-h" style="--hm: 2">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="layout-h">How one hand types a full keyboard</h2>
+        <p>
+          The left half of the Colemak layout sits under your fingers. Hold Space, or press it together with a key, and that key
+          types its mirror from the right half with the same finger. Hold Enter for numbers and Delete for symbols. Detailed
+          keycaps print all of it, Minimal keycaps the letters only.
+        </p>
+      </div>
+      <div class="grid fill">
+        <div class="frame frame--photo frame--fill span-6">
+          <img class="frame__img" src={`${img}/detail-legends.webp`} srcset={`${img}/detail-legends-800.webp 800w, ${img}/detail-legends.webp 1400w`} sizes={pairSizes} alt="Detailed keycaps: a black letter, a blue letter, a red number and a symbol on each key" width="1400" height="1050" loading="lazy" decoding="async" />
+        </div>
+        <div class="frame frame--photo frame--fill span-6">
+          <img class="frame__img" src={`${img}/detail-legends-minimal.webp`} srcset={`${img}/detail-legends-minimal-800.webp 800w, ${img}/detail-legends-minimal.webp 1400w`} sizes={pairSizes} alt="Minimal keycaps: two letters on each key" width="1400" height="1050" loading="lazy" decoding="async" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="controls" aria-labelledby="controls-h" style="--hm: 2">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="controls-h">Keyboard controls for scrolling and pointing</h2>
+      </div>
+      <div class="grid fill">
+        {
+          controls.map((c) => (
+            <article class="card card--row span-4">
+              <h3>{c.title}</h3>
+              <p>{c.text}</p>
+              <div class="panel">
+                <img class="frame__img" src={c.src} srcset={c.srcset} sizes={c.srcset && '(max-width: 639px) 92vw, (max-width: 1023px) 86vw, 32vw'} alt={c.alt} width={c.size} height={c.size} loading="lazy" decoding="async" />
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section ground-inverse" id="options" aria-labelledby="options-h">
+    <div class="wrap">
+      <div class="grid fill">
+        <div class="span-5 split-col">
+          <h2 id="options-h">Keyboard options, built to order</h2>
+          <ul class="rows split-col__end">
+            {
+              options.map((o) => (
+                <li>
+                  <span class="rows__name">{o.name}</span>
+                  <span class="rows__value">{o.value}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+        <div class="frame frame--photo frame--fill frame--cutout span-7 start-6">
+          <img
+            class="frame__img"
+            src={`${img}/angle-minimal-pink.webp`}
+            srcset={`${img}/angle-minimal-pink-800.webp 800w, ${img}/angle-minimal-pink.webp 1600w`}
+            sizes="(max-width: 1023px) 92vw, 54vw"
+            alt="MonoTypist in the light pink housing with Minimal keycaps, seen from the front left"
+            width="1600"
+            height="1216"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section statement" id="practice" data-moment="word-highlight" aria-label="Practice">
+    <div class="wrap">
+      <p class="t-label">Practice</p>
+      <p class="mo-wh__text">
+        A typing course and a speed test come with the keyboard. The course adds letters as you master them, the test counts words per
+        minute, and both run in your browser.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="questions" aria-labelledby="questions-h">
+    <div class="wrap">
+      <div class="grid fill">
+        <div class="span-5 split-col">
+          <h2 id="questions-h">Questions</h2>
+          <div class="faq">
+            <div class="faq__item">
+              <h3>Can I remap the keyboard?</h3>
+              <p>Yes. It runs the open-source <a class="link" href="https://zmk.dev/docs">ZMK firmware</a>, so every key can be remapped.</p>
+            </div>
+            <div class="faq__item">
+              <h3>Does the keyboard need a driver?</h3>
+              <p>No. Over Bluetooth or a USB cable, the computer sees an ordinary keyboard.</p>
+            </div>
+            <div class="faq__item">
+              <h3>Is there a right-hand keyboard?</h3>
+              <p>Not yet. Pick Right in the waitlist form and we email you when it is ready.</p>
+            </div>
+          </div>
+        </div>
+        <div class="frame frame--photo frame--fill span-7 start-6">
+          <img
+            class="frame__img"
+            src={`${img}/detail-thumbs.webp`}
+            srcset={`${img}/detail-thumbs-480.webp 480w, ${img}/detail-thumbs.webp 800w`}
+            sizes="(max-width: 1023px) 92vw, 54vw"
+            alt="The three thumb keys: Enter, Space and Delete"
+            width="800"
+            height="800"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="order" aria-labelledby="order-h" style="--hm: 2">
+    <div class="wrap">
+      <div class="grid fill">
+        <div class="span-5 split-col">
+          <h2 id="order-h">Waitlist and price</h2>
+          <p>
+            Pick a housing and keycaps to see your keyboard. The planned price
+            is <span data-assumed>299 USD</span>, and you pay nothing now.
+          </p>
+          <form class="form" action={formAddress} method="post" data-endpoint={formAddress} data-sent="You are on the waitlist. We email you when ordering opens." novalidate>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="f-email-err" />
+              <p class="field__error" id="f-email-err" hidden>Write an email address with an @, like name@example.com.</p>
+            </div>
+            <div class="field">
+              <label for="f-hand">Hand</label>
+              <select id="f-hand" name="hand">
+                <option value="left">Left</option>
+                <option value="right">Right, when it is ready</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-legends">Legends</label>
+              <select id="f-legends" name="legends">
+                <option>English</option>
+                <option>Danish</option>
+                <option>Hungarian</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-switches">Switches</label>
+              <select id="f-switches" name="switches">
+                <option>NuPhy tactile</option>
+                <option>NuPhy linear</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-housing">Housing</label>
+              <select id="f-housing" name="housing" data-order-choice="housing">
+                <option value="black">Black</option>
+                <option value="pink">Light pink</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-keycaps">Keycaps</label>
+              <select id="f-keycaps" name="keycaps" data-order-choice="keycaps">
+                <option value="detailed">Detailed</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </div>
+            <div class="btn-row"><button class="btn btn--primary" type="submit">{mainAction.label}</button></div>
+            <p class="form__status" role="status" data-form-status></p>
+            <p class="t-small muted">One email when ordering opens, and nothing else.</p>
+          </form>
+        </div>
+        <div class="frame frame--photo frame--fill frame--cutout span-7 start-6">
+          <img
+            class="frame__img"
+            id="order-picture"
+            src={`${img}/top-detailed-black.webp`}
+            srcset={`${img}/top-detailed-black-800.webp 800w, ${img}/top-detailed-black.webp 1200w`}
+            sizes="(max-width: 1023px) 92vw, 54vw"
+            alt="MonoTypist from above: black housing with Detailed keycaps"
+            width="1200"
+            height="1012"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The housing and keycap fields change the picture beside the form: one photograph per combination. -->
+  <script is:inline slot="scripts">
+    (() => {
+      const picture = document.getElementById('order-picture');
+      const fields = document.querySelectorAll('[data-order-choice]');
+      if (!picture || !fields.length) return;
+      const names = { black: 'black', pink: 'light pink', detailed: 'Detailed', minimal: 'Minimal' };
+      const show = () => {
+        const pick = {};
+        fields.forEach((f) => (pick[f.dataset.orderChoice] = f.value));
+        const file = `/img/product/top-${pick.keycaps}-${pick.housing}`;
+        picture.srcset = `${file}-800.webp 800w, ${file}.webp 1200w`;
+        picture.src = `${file}.webp`;
+        picture.alt = `MonoTypist from above: ${names[pick.housing]} housing with ${names[pick.keycaps]} keycaps`;
+      };
+      fields.forEach((f) => f.addEventListener('change', show));
+      show();
+    })();
+  </script>
 </Base>
