@@ -39,12 +39,13 @@ stored in this repository.
 ## Branches and deployment
 
 - `main`: this site (the Astro source).
+- `deploy`: the built site, and nothing else. Never edit it by hand: it is replaced on every push to `main`.
 - `legacy-signup`: the old "coming soon" page.
 
-monotypist.com is currently served by Porkbun's static hosting, not by GitHub Pages. Before `main` is pushed,
-check in the Porkbun dashboard which branch it deploys: `main` holds source files and has no `index.html` at its
-root, so deploying it as it is would take the live page down.
+monotypist.com is served by Porkbun's static hosting, which is connected to this repository (Porkbun → the
+domain → Static Hosting → GitHub Connect). Porkbun does not build anything: it serves the files of one branch
+exactly as they are. `main` holds source files and has no `index.html` at its root, so Porkbun must be set to
+the `deploy` branch, never to `main`.
 
-`.github/workflows/deploy.yml` builds the site and deploys it to GitHub Pages. It only runs when started by hand.
-To launch on GitHub Pages: point the domain's DNS at GitHub Pages, set Settings → Pages → Source to
-"GitHub Actions", and turn on the push trigger in that file.
+`.github/workflows/deploy.yml` runs on every push to `main`: it builds the site and replaces the `deploy`
+branch with the result. A change is live a minute or two after the push.
