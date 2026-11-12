@@ -1,0 +1,27 @@
+---
+// The logo files are alpha masks, so the logo takes the text colour of whatever it sits in.
+import full from '../assets/logo-full.webp';
+import wordmark from '../assets/logo-wordmark.webp';
+
+interface Props {
+  variant?: 'wordmark' | 'full';
+  height?: string;
+}
+
+const { variant = 'wordmark', height = '2rem' } = Astro.props;
+const img = variant === 'full' ? full : wordmark;
+const vars = `--logo-src:url(${img.src});--logo-ratio:${img.width}/${img.height};--logo-h:${height}`;
+---
+
+<span class="logo" role="img" aria-label="MonoTypist" style={vars}></span>
+
+<style>
+  .logo {
+    display: block;
+    height: var(--logo-h);
+    aspect-ratio: var(--logo-ratio);
+    background: currentColor;
+    -webkit-mask: var(--logo-src) center / contain no-repeat;
+    mask: var(--logo-src) center / contain no-repeat;
+  }
+</style>

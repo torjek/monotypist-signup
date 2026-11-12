@@ -1,0 +1,116 @@
+---
+import Logo from './Logo.astro';
+import { mainNav, shopLink } from '../data/site';
+
+const path = Astro.url.pathname.replace(/\/?$/, '/');
+const current = (href: string) => (path === href ? 'page' : undefined);
+---
+
+<header class="site-header">
+  <div class="container bar">
+    <a class="home" href="/" aria-label="MonoTypist home">
+      <Logo height="1.9rem" />
+    </a>
+    <nav aria-label="Main">
+      <ul>
+        {
+          mainNav.map((link) => (
+            <li>
+              <a href={link.href} aria-current={current(link.href)}>
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <a class="button shop" href={shopLink.href} aria-current={current(shopLink.href)}>
+      {shopLink.label}
+    </a>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    min-height: var(--header-h);
+  }
+
+  .home {
+    display: block;
+    flex: none;
+    padding-block: var(--space-2);
+  }
+
+  nav {
+    margin-left: auto;
+    min-width: 0;
+  }
+
+  ul {
+    display: flex;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  nav a {
+    display: block;
+    padding-block: var(--space-2);
+    color: var(--color-ink-muted);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 150ms ease;
+  }
+
+  nav a:hover,
+  nav a[aria-current='page'] {
+    color: var(--color-ink);
+  }
+
+  nav a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.5em;
+  }
+
+  .shop {
+    flex: none;
+  }
+
+  /* Phones: logo and Shop on the first row, links on a second row that scrolls sideways if needed */
+  @media (max-width: 44rem) {
+    .bar {
+      flex-wrap: wrap;
+      padding-block: var(--space-2);
+    }
+
+    .shop {
+      margin-left: auto;
+    }
+
+    nav {
+      order: 3;
+      flex-basis: 100%;
+      margin-left: 0;
+      overflow-x: auto;
+    }
+
+    ul {
+      gap: var(--space-3);
+    }
+  }
+</style>

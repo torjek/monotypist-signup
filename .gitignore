@@ -1,8 +1,7 @@
-# Original large logo (replaced by optimized versions)
-MonoTypist_logo_dark.png
-MonoTypist_logo.png
-MonoTypist_icon.png
-
-# Utility scripts
-*.py
-*.ps1
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+.DS_Store
+Thumbs.db
