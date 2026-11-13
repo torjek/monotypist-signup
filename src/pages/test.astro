@@ -1,8 +1,192 @@
 ---
+// The speed test. The frame is src/components/Tool.astro, the test itself src/scripts/test.ts,
+// the chart of the tries src/scripts/chart.ts, the words src/data/words.ts.
 import Base from '../layouts/Base.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Tool from '../components/Tool.astro';
+import { wordsCredit } from '../data/words';
+
+const counts = [10, 25, 50, 100];
+const clocks = [0, 15, 30, 60];
 ---
 
-<Base title="Speed test">
-  <Placeholder title="Speed test" milestone="M2" lead="Measure your typing speed on the MonoTypist layout." />
+<Base title="Speed test" description="A typing speed test for MonoTypist in English, Danish or Hungarian, with a chart of your tries. It runs in your browser, with or without the keyboard.">
+  <Tool
+    title="Speed test"
+    lead="A run of common words, by count or against the clock. Only the words typed right count towards the speed."
+    label="Speed test. Type the words shown."
+  >
+    <Fragment slot="bar">
+      <div class="tool-pick tool-pick--row" data-group="words">
+        <span class="t-label muted" id="pick-words">Words</span>
+        <div class="tabs" role="tablist" aria-labelledby="pick-words" data-pick="words">
+          {counts.map((n) => <button class="tab" type="button" role="tab" aria-selected={n === 25 ? 'true' : 'false'} data-value={n}>{n}</button>)}
+        </div>
+      </div>
+      <div class="tool-pick tool-pick--row">
+        <span class="t-label muted" id="pick-time">Clock</span>
+        <div class="tabs" role="tablist" aria-labelledby="pick-time" data-pick="time">
+          {clocks.map((s) => <button class="tab" type="button" role="tab" aria-selected={s === 0 ? 'true' : 'false'} data-value={s}>{s ? `${s} s` : 'Off'}</button>)}
+        </div>
+      </div>
+      <div class="tool-pick tool-pick--row">
+        <button class="tab" type="button" aria-pressed="true" data-toggle="hint">Next key</button>
+        <button class="tab" type="button" aria-pressed="false" data-toggle="advanced">Numbers and symbols</button>
+      </div>
+      <button class="tab test-new" type="button" data-new>New test</button>
+    </Fragment>
+
+    <div class="test-stage" data-first>
+      <div class="tool-box test-words" data-words>
+        <span class="tool-wake">Click here to type</span>
+        <div class="test-clip"><div class="test-run" data-run></div></div>
+      </div>
+      <div class="test-result" data-result hidden>
+        <dl class="stats">
+          <div><dt class="t-small muted">Words per minute</dt><dd class="t-stat" data-stat="wpm">0</dd></div>
+          <div><dt class="t-small muted">Accuracy</dt><dd class="t-stat" data-stat="acc">0%</dd></div>
+          <div><dt class="t-small muted">Time</dt><dd class="t-stat" data-stat="time">0 s</dd></div>
+          <div><dt class="t-small muted">Keys per minute</dt><dd class="t-stat" data-stat="kpm">0</dd></div>
+        </dl>
+      </div>
+    </div>
+    <p class="test-live t-small muted"><span data-live aria-live="off">25 words</span><span data-how>Esc starts a new test</span></p>
+  </Tool>
+
+  <section class="section tries-section" id="tries" aria-labelledby="tries-h" data-tries hidden>
+    <div class="wrap">
+      <div class="section-head section-head--row">
+        <div>
+          <h2 id="tries-h">Your tries</h2>
+          <p>Kept in this browser only. Nothing is sent anywhere.</p>
+        </div>
+        <div class="tries-tools">
+          <div class="tabs" role="tablist" aria-label="Show the tries as">
+            <button class="tab" type="button" role="tab" id="tab-chart" aria-selected="true" aria-controls="tries-chart">Chart</button>
+            <button class="tab" type="button" role="tab" id="tab-table" aria-selected="false" aria-controls="tries-table">Table</button>
+          </div>
+          <button class="tab" type="button" data-clear>Clear the tries</button>
+        </div>
+      </div>
+      <div class="grid fill">
+        <div class="frame frame--fill span-12 tries">
+          <dl class="stats">
+            <div><dt class="t-small muted">Tries</dt><dd class="t-stat" data-stat="tries">0</dd></div>
+            <div><dt class="t-small muted">Fastest, words per minute</dt><dd class="t-stat" data-stat="best">0</dd></div>
+            <div><dt class="t-small muted">Average of the last 10</dt><dd class="t-stat" data-stat="avg">0</dd></div>
+          </dl>
+          <div class="tries-panel" id="tries-chart" role="tabpanel" aria-labelledby="tab-chart">
+            <div class="chart-head">
+              <span class="t-small">Words per minute, try by try</span>
+              <span class="chart-keys t-small muted">
+                <span class="chart-key"><i class="chart-key__dot"></i>One try</span>
+                <span class="chart-key"><i class="chart-key__line"></i>Average of the last 10</span>
+              </span>
+            </div>
+            <div class="chart" data-chart role="group" aria-label="Chart of words per minute, try by try. The arrow keys step through the tries."></div>
+          </div>
+          <div class="tries-panel tries-scroll" id="tries-table" role="tabpanel" aria-labelledby="tab-table" tabindex="0" hidden>
+            <table class="tries-table">
+              <thead>
+                <tr>
+                  <th scope="col">Try</th><th scope="col">When</th><th scope="col" class="num">Words per minute</th><th scope="col" class="num">Accuracy</th>
+                  <th scope="col" class="num">Time</th><th scope="col">Test</th><th scope="col">Language</th><th scope="col">Keyboard</th>
+                </tr>
+              </thead>
+              <tbody data-tries-rows></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Fragment slot="credit">
+    Word lists adapted from <a href={wordsCredit.href} rel="noopener">{wordsCredit.name}</a>, <a href={wordsCredit.licenceHref} rel="noopener license">{wordsCredit.licence}</a>.
+  </Fragment>
 </Base>
+
+<script>
+  import '../scripts/test';
+</script>
+
+<style is:global>
+  /* ---- the controls ---- */
+  .test-new { margin-left: auto; }
+  /* A test against the clock has no word count. */
+  .tool[data-timed] [data-group='words'] { opacity: 0.45; }
+
+  /* ---- the words to type: three lines, the one in hand in the middle ---- */
+  .test-stage { display: grid; align-content: center; min-height: 140px; }
+  .test-words { padding: var(--s-3) var(--s-4); font-size: 22px; }
+  .test-clip { height: calc(var(--lh) * 3); overflow: hidden; --lh: 38px; }
+  .test-run { line-height: 38px; transition: transform var(--dur) var(--ease); }
+  .w { display: inline-block; white-space: nowrap; }
+  .c { display: inline-block; border-radius: 4px; line-height: 30px; }
+  .c.is-ok { color: var(--ink); }
+  .c.is-bad { color: var(--k-red); }
+  .c.is-left { text-decoration: underline; text-decoration-color: var(--k-red); text-underline-offset: 5px; }
+  .c.is-now { background: var(--accent); color: var(--p-accent-ink); }
+  .w.is-wrong { box-shadow: 0 2px 0 -1px var(--k-red); }
+  .test-live { display: flex; justify-content: space-between; gap: var(--s-4); font-variant-numeric: tabular-nums; }
+
+  /* ---- the result, in the words' place ---- */
+  .test-result .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (max-width: 639px) {
+    .test-result .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4) var(--s-3); }
+  }
+
+  /* ---- the tries ---- */
+  .section-head--row > .tries-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); max-width: none; }
+  .tries { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: var(--s-5); padding: var(--s-5); }
+  .tries::before { display: none; }
+  .tries .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  .tries-panel { display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; min-width: 0; }
+  .tries-scroll { overflow: auto; max-height: 480px; border-radius: var(--r-sm); }
+  .chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2) var(--s-5); }
+  .chart-keys { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); }
+  .chart-key { display: inline-flex; align-items: center; gap: var(--s-2); }
+  .chart-key__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--chart-dot); }
+  .chart-key__line { width: 18px; height: 2px; border-radius: 1px; background: var(--ink); }
+
+  .chart { --chart-dot: color-mix(in oklab, var(--ink) 36%, var(--surface)); position: relative; height: 320px; border-radius: var(--r-sm); touch-action: pan-y; }
+  .tries { --chart-dot: color-mix(in oklab, var(--ink) 36%, var(--surface)); }
+  .chart > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .chart-grid { stroke: var(--line); }
+  .chart-base { stroke: var(--line-strong); }
+  .chart-tick { font: 400 12px var(--font-text); fill: var(--muted); font-variant-numeric: tabular-nums; }
+  .chart-dots circle { fill: var(--chart-dot); }
+  .chart-dots--ring circle { stroke: var(--surface); stroke-width: 2; }
+  .chart-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .chart-end { font: 500 13px var(--font-text); fill: var(--ink); font-variant-numeric: tabular-nums; }
+  .chart-cross { stroke: var(--line-strong); }
+  .chart-mark { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+  .chart-tip {
+    position: absolute; z-index: 2; display: grid; gap: 2px; padding: var(--s-2) var(--s-3); background: var(--bg);
+    border: 1px solid var(--line-strong); border-radius: var(--r-sm); box-shadow: 0 6px 20px rgb(0 0 0 / 0.08);
+    font-size: var(--t-label); line-height: 1.4; color: var(--muted); white-space: nowrap; pointer-events: none;
+  }
+  .chart-tip strong { font-size: var(--t-small); font-weight: 500; color: var(--ink); }
+
+  .tries-table { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+  .tries-table :is(th, td) { padding: var(--s-2) var(--s-3); text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  .tries-table th { position: sticky; top: 0; background: var(--surface); font-weight: 500; color: var(--muted); border-bottom-color: var(--line-strong); }
+  .tries-table .num { text-align: right; }
+
+  /* Below 1280px the section is as tall as its content, so the chart keeps its own height. */
+  @media (max-width: 1279px) {
+    main > section.tries-section { height: auto; }
+    main > section.tries-section > .wrap { height: auto; }
+    main > section.tries-section > .wrap > .fill { flex: 1 0 auto; }
+    main > section.tries-section .grid.fill > .tries.frame--fill { flex: 1 0 auto; height: auto; }
+    .tries-panel, .chart { flex: none; }
+  }
+  /* From 1280px the kit makes a section one screen tall: the chart takes what the head and the numbers leave. */
+  @media (min-width: 1280px) {
+    .tries-panel { flex: 1 1 0; }
+    .chart { flex: 1 1 0; height: auto; min-height: 0; }
+    .tries-scroll { max-height: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .test-run { transition: none; }
+  }
+</style>

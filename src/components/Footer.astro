@@ -9,6 +9,8 @@ interface Props {
 }
 
 const { home } = Astro.props;
+// A page that uses someone else's work under a licence names it here (the "credit" slot of Base.astro).
+const credit = Astro.slots.has('credit') ? (await Astro.slots.render('credit')).trim() : '';
 ---
 
 <footer class="footer closing" id="contact" aria-labelledby="close-h">
@@ -46,6 +48,7 @@ const { home } = Astro.props;
         <span>&copy; 2026 MonoTypist</span>
         <span class="footer__legal-links">{legalNav.map((item) => <a href={item.href}>{item.label}</a>)}</span>
       </div>
+      {credit && <p class="footer__credit" set:html={credit} />}
     </div>
   </div>
 </footer>
@@ -53,6 +56,8 @@ const { home } = Astro.props;
 <!-- The legal links: one row on a wide screen; on a phone four columns, so the third starts on the same line as the column above. -->
 <style is:inline>
   .footer__legal-links { display: flex; flex-wrap: wrap; gap: 0 var(--s-5); }
+  .footer__credit { margin-top: var(--s-3); font-size: var(--t-label); color: var(--muted); }
+  .footer__credit a { text-decoration: underline; text-underline-offset: 3px; }
   /* Two link columns, where the kit expects four: on a tablet each takes half the row. */
   @media (min-width: 640px) and (max-width: 1023px) {
     .footer .footer__col { grid-column: auto / span 6; }

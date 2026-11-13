@@ -1,5 +1,6 @@
 ---
 // The frame every page shares: head, fixed nav, footer, phone action bar.
+// Slots: the page itself, "head", "scripts", and "credit" (a licence credit, shown as the footer's last line).
 //
 // The look comes from the design kit in public/assets (copied unchanged from the design-taste-frontend
 // skill; do not edit those files, the skill's checker compares them). This file loads the kit as plain
@@ -94,7 +95,7 @@ const shareImage = new URL('/share.jpg', Astro.site);
     <main id="top">
       <slot />
     </main>
-    <Footer home={home} />
+    <Footer home={home}><slot name="credit" slot="credit" /></Footer>
     <nav class="actionbar" aria-label="Quick actions">
       <a class="btn btn--primary" href={link(mainAction.href, home)}>{mainAction.label}</a>
     </nav>

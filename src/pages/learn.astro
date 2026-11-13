@@ -1,8 +1,75 @@
 ---
+// The typing course. The frame is src/components/Tool.astro, the course itself src/scripts/learn.ts,
+// the order of the characters src/data/course.ts.
 import Base from '../layouts/Base.astro';
-import Placeholder from '../components/Placeholder.astro';
+import Tool from '../components/Tool.astro';
 ---
 
-<Base title="Typing course">
-  <Placeholder title="Typing course" milestone="M2" lead="Learn one-handed typing key by key." />
+<Base title="Typing course" description="A typing course for MonoTypist: one new character per level, in English, Danish or Hungarian. It runs in your browser, with or without the keyboard.">
+  <Tool
+    title="Typing course"
+    lead="Each level adds one character. Type the new one right several times in a row and the next one joins; a character you miss comes back."
+    label="Typing course. Type the characters shown."
+  >
+    <div class="tool-pick tool-pick--row" slot="bar">
+      <span class="t-label muted" id="rigor-l">Right in a row to pass</span>
+      <div class="stepper" role="group" aria-labelledby="rigor-l">
+        <button class="tab" type="button" data-rigor="-1" aria-label="One fewer">&minus;</button>
+        <output class="stepper__now" data-rigor-now>5</output>
+        <button class="tab" type="button" data-rigor="1" aria-label="One more">+</button>
+      </div>
+    </div>
+
+    <div class="tool-box course-word" data-word data-first><span class="tool-wake">Click here to type</span></div>
+    <div class="course-bar" aria-hidden="true"><span data-level-bar></span></div>
+    <div class="course-levels" role="group" aria-label="The characters in order. Pick one to start the course from it." data-levels></div>
+    <dl class="stats">
+      <div><dt class="t-small muted">Level</dt><dd class="t-stat" data-stat="level">1</dd></div>
+      <div><dt class="t-small muted">Words per minute</dt><dd class="t-stat" data-stat="wpm">0</dd></div>
+      <div><dt class="t-small muted">Accuracy</dt><dd class="t-stat" data-stat="acc">0%</dd></div>
+    </dl>
+  </Tool>
 </Base>
+
+<script>
+  import '../scripts/learn';
+</script>
+
+<style is:global>
+  .stepper { display: flex; align-items: center; gap: var(--s-1); }
+  .stepper .tab { width: var(--btn-h-sm); padding: 0; font-size: var(--t-body); }
+  .stepper__now { min-width: 2ch; text-align: center; font: 500 var(--t-body) var(--font-mono); color: var(--ink); }
+
+  /* The word to type: done characters dark (red when missed), the next one on the housing's pink. */
+  .course-word {
+    display: flex; align-items: center; justify-content: center; gap: 0.12em; min-height: 84px; padding: var(--s-2);
+    font-size: clamp(28px, 1.5vw + 18px, 40px); line-height: 1;
+  }
+  .ch { display: inline-flex; align-items: center; justify-content: center; min-width: 1.1ch; height: 1.5em; padding: 0 0.08em; border-radius: var(--r-sm); }
+  .ch.is-ok { color: var(--ink); }
+  .ch.is-bad { color: var(--k-red); }
+  .ch.is-now { background: var(--accent); color: var(--p-accent-ink); }
+  /* A space is drawn as the mark printed on the keycap. */
+  .ch--sp::before { content: ''; width: 0.62em; height: 0.24em; margin-top: 0.5em; border: 2px solid currentColor; border-top: 0; border-radius: 0 0 2px 2px; }
+
+  /* How far the level is: the weakest character's count against the count to pass. */
+  .course-bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .course-bar > span { display: block; height: 100%; width: 0; border-radius: 2px; background: var(--ink); transition: width var(--dur) var(--ease); }
+
+  /* Every character of the course in order: in the level (dark), still in training (pink), ahead (grey). */
+  .course-levels { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+  .lv {
+    width: 26px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent;
+    font: 500 15px/1 var(--font-mono); color: var(--muted); cursor: pointer;
+    transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .lv:hover { border-color: var(--ink); color: var(--ink); }
+  .lv.is-in { color: var(--ink); border-color: var(--line-strong); background: var(--bg); }
+  .lv.is-hard { background: var(--accent); border-color: transparent; color: var(--p-accent-ink); }
+  .lv[aria-current] { border-color: var(--ink); }
+
+  .tool .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  @media (prefers-reduced-motion: reduce) {
+    .course-bar > span, .lv { transition: none; }
+  }
+</style>

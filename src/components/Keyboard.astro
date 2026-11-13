@@ -1,0 +1,137 @@
+---
+// The drawing of MonoTypist from above, with the four legends of every key. One drawing for the
+// whole site: the home page tour, the typing course and the speed test all place this file.
+//
+// Everything drawn comes from src/data/keyboard.ts. The drawing itself does nothing: a page's script
+// marks keys through src/scripts/board.ts (pressed, held, next to press) and sets `data-layer` on any
+// box around the drawing to bring one layer's legends forward.
+import { blockKeys, lowerKeys, knob, fiveWay, touchpad, caps, legends } from '../data/keyboard';
+
+interface Props {
+  /** What the drawing shows, for screen readers. */
+  label?: string;
+}
+
+const {
+  label = 'MonoTypist from above: four rows of six keys, CTRL, ALT, a knob, three thumb keys, a touchpad and a 5-way switch',
+} = Astro.props;
+
+const us = legends.us;
+const U = 64; // one key unit in the drawing
+const CAP = 58; // a keycap's side; the rest of the unit is the gap between keys
+const n = (v: number) => Math.round(v * 10) / 10;
+
+// Key symbols on a 24 by 24 box.
+const icons = {
+  esc: '<path class="kb-ic" d="M10.66 5.35A8 8 0 1 1 5.35 10.66"/><path class="kb-ic" d="M12 12L4 4M4 9V4h5"/>',
+  tab: '<path class="kb-ic" d="M4 8h15M15 4l4 4-4 4"/><path class="kb-ic" d="M20 16H5M9 12l-4 4 4 4"/>',
+  backspace: '<path class="kb-ic-fill" d="M8.5 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8.5L2 12z"/><path class="kb-ic-cut" d="M11.5 9l6 6M17.5 9l-6 6"/>',
+  shift: '<path class="kb-ic" d="M12 3.5l-7 7.5h4v5h6v-5h4z"/><path class="kb-ic" d="M8 20.5h8"/>',
+  enter: '<path class="kb-ic" d="M19 5v7.5H5.5"/><path class="kb-ic" d="M9.5 8.5l-4 4 4 4"/>',
+  delete: '<path class="kb-ic-fill" d="M15.5 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11.5L22 12z"/><path class="kb-ic-cut" d="M6.5 9l6 6M12.5 9l-6 6"/>',
+};
+
+// The housing's outline, the touchpad with its cut corners and the cross of the 5-way switch.
+const housing = 'M-19 10 192-19 534-19 548 248 445 454 384 454 256 374 0 368-19 288Z';
+const pad = { x: touchpad.x * U, y: touchpad.y * U, w: touchpad.w * U, h: touchpad.h * U, c: 12 };
+const padPoints = [
+  [pad.x + pad.c, pad.y], [pad.x + pad.w - pad.c, pad.y], [pad.x + pad.w, pad.y + pad.c], [pad.x + pad.w, pad.y + pad.h - pad.c],
+  [pad.x + pad.w - pad.c, pad.y + pad.h], [pad.x + pad.c, pad.y + pad.h], [pad.x, pad.y + pad.h - pad.c], [pad.x, pad.y + pad.c],
+].map(([x, y]) => `${n(x)},${n(y)}`).join(' ');
+const arm = fiveWay.arm * U;
+const cross = `M${n(fiveWay.x * U - arm / 2)} ${n(fiveWay.y * U - arm * 1.5)}h${n(arm)}v${n(arm)}h${n(arm)}v${n(arm)}h${n(-arm)}v${n(arm)}h${n(-arm)}v${n(-arm)}h${n(-arm)}v${n(-arm)}h${n(arm)}z`;
+---
+
+<svg class="kb" viewBox="-30 -30 592 496" role="img" aria-label={label}>
+  <path class="kb-house" d={housing}></path>
+  <polygon class="kb-pad" points={padPoints}></polygon>
+  <circle class="kb-knob" cx={n(knob.x * U)} cy={n(knob.y * U)} r={n(knob.r * U)}></circle>
+  <circle class="kb-knob__top" cx={n(knob.x * U)} cy={n(knob.y * U)} r={n(knob.r * U * 0.62)}></circle>
+  <path class="kb-five" d={cross} transform={`rotate(${fiveWay.r} ${n(fiveWay.x * U)} ${n(fiveWay.y * U)})`}></path>
+
+  {
+    blockKeys.map((p, k) => (
+      <g transform={`translate(${n(p.x * U)} ${n(p.y * U)})`}>
+        <g class="kb-key" data-key={`k${k}`}>
+          <rect class="kb-cap" width={CAP} height={CAP} rx="8" />
+          {caps[k]?.icon && <g class="lg lg--base" transform={k === 18 ? 'translate(17 17)' : 'translate(6 6) scale(.8)'} set:html={icons[caps[k].icon]} />}
+          {caps[k]?.label && <text class="lg lg--base" x="29" y="25">{caps[k].label}</text>}
+          {!caps[k] && <text class="lg lg--base" x="17" y="25" data-k={k} data-slot="base">{us.base[k]}</text>}
+          {k >= 6 && <text class="lg lg--blue" x="41" y="25" data-k={k} data-slot="blue">{us.blue[k]}</text>}
+          {us.red[k] === ' '
+            ? <path class="lg lg--red kb-sp" d="M11 43v5h12v-5" />
+            : <text class="lg lg--red" x="17" y="49" data-k={k} data-slot="red">{us.red[k]}</text>}
+          <text class="lg lg--orange" x="41" y="49" data-k={k} data-slot="orange">{us.orange[k]}</text>
+        </g>
+      </g>
+    ))
+  }
+
+  {
+    lowerKeys.map((key) => {
+      const h = (key.h ?? 1) * U - (U - CAP);
+      const turn = key.r ? `rotate(${key.r} ${n(key.rx * U)} ${n(key.ry * U)}) ` : '';
+      const hold = { enter: 'var(--k-red)', space: 'var(--k-blue)', delete: 'var(--k-orange)' }[key.id];
+      return (
+        <g transform={`${turn}translate(${n(key.x * U)} ${n(key.y * U)})`}>
+          <g class="kb-key" data-key={hold ? key.id : undefined} style={hold ? `--hold: ${hold}` : undefined}>
+            <rect class="kb-cap" width={CAP} height={h} rx="8" />
+            {key.label && <text class="kb-word" x="29" y="33">{key.label}</text>}
+            {key.id === 'space' && <text class="kb-word kb-word--mono" x="29" y="29">Mono</text>}
+            {(key.id === 'enter' || key.id === 'delete') && <g transform="translate(17 12)" set:html={icons[key.id]} />}
+            {hold && <rect class="kb-bar" x={key.id === 'space' ? 13 : 19} y={key.id === 'space' ? 36 : 50} width={key.id === 'space' ? 32 : 20} height="4" rx="2" />}
+          </g>
+        </g>
+      );
+    })
+  }
+</svg>
+
+<style is:global>
+  /* The colours of the keycaps and of their three coloured legends. */
+  :root { --k-cap: #fbfaf9; --k-blue: #2f62d6; --k-red: #9c1c30; --k-orange: #dd5a1f; }
+
+  .kb { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .kb-house { fill: var(--ink); stroke: var(--ink); stroke-width: 16; stroke-linejoin: round; }
+  .kb-pad { fill: color-mix(in oklab, var(--ink) 86%, #fff); stroke: rgb(255 255 255 / 0.3); stroke-width: 1.5; }
+  .kb-knob { fill: #a9a7a5; }
+  .kb-knob__top, .kb-five { fill: #cfcdcb; }
+  .kb-five { stroke: #cfcdcb; stroke-width: 4; stroke-linejoin: round; }
+  .kb-key { color: var(--ink); transition: transform 90ms ease-out; }
+  .kb-cap { fill: var(--k-cap); transition: fill 120ms ease-out; }
+  .kb-bar { fill: var(--hold); }
+  .kb-ic { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .kb-ic-fill { fill: currentColor; }
+  .kb-ic-cut { fill: none; stroke: var(--k-cap); stroke-width: 2; stroke-linecap: round; }
+  .kb-word { font: 600 11px var(--font-text); letter-spacing: 0.02em; text-anchor: middle; fill: currentColor; }
+  .kb-word--mono { font-size: 14px; font-weight: 700; letter-spacing: 0; }
+  /* A key going down turns the housing's pink; a held thumb key takes the colour of its layer. */
+  .kb-key.is-down, .kb-key.is-held { transform: translateY(2px); }
+  .kb-key.is-down > .kb-cap { fill: var(--accent); }
+  .kb-key.is-down .kb-ic-cut { stroke: var(--accent); }
+  .kb-key.is-held { color: #fff; }
+  .kb-key.is-held > .kb-cap { fill: var(--hold); }
+  .kb-key.is-held .kb-bar { fill: #fff; }
+  .kb-key.is-held .kb-ic-cut { stroke: var(--hold); }
+  /* The key to press next wears a pink ring; the thumb key to hold with it, a ring in its layer's colour. */
+  .kb-key.is-next > .kb-cap { stroke: var(--accent); stroke-width: 6; paint-order: stroke; }
+  .kb-key.is-next:not([data-key^='k']) > .kb-cap { stroke: var(--hold); }
+  /* The four legends of a key, as on the Detailed keycaps: black and blue above, red and orange below. */
+  .lg { font: 600 17px var(--font-text); text-anchor: middle; fill: currentColor; transition: opacity 200ms ease-out; }
+  .lg--blue { color: var(--k-blue); }
+  .lg--red { color: var(--k-red); }
+  .lg--orange { color: var(--k-orange); }
+  .kb-sp { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  /* The layer in use stays at full strength, the others step back. "letters" keeps the two letter layers. */
+  [data-layer='base'] .lg:not(.lg--base),
+  [data-layer='blue'] .lg:not(.lg--blue),
+  [data-layer='red'] .lg:not(.lg--red),
+  [data-layer='orange'] .lg:not(.lg--orange),
+  [data-layer='letters'] .lg:is(.lg--red, .lg--orange) { opacity: 0.22; }
+  @media (max-width: 639px) {
+    .lg { font-size: 20px; } /* the drawing is half its size on a phone */
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .kb-key, .kb-cap, .lg { transition: none; }
+  }
+</style>

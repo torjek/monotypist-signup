@@ -1,0 +1,141 @@
+---
+// The frame the typing course and the speed test share: the page's heading, the two choices every
+// typing page has (the language, and which keyboard is under the visitor's hand), and a box with
+// the page's own controls, its text and the keyboard drawing.
+//
+// The page fills two slots: "bar" (its controls, above the typing area) and the default one (what
+// stands left of the drawing). The script side of this file is src/scripts/tool.ts.
+import Keyboard from './Keyboard.astro';
+import { langs } from '../data/keyboard';
+
+interface Props {
+  title: string;
+  lead: string;
+  /** What the typing area is, for screen readers. */
+  label: string;
+}
+
+const { title, lead, label } = Astro.props;
+---
+
+<section class="section tool-section" aria-labelledby="tool-h">
+  <div class="wrap">
+    <div class="section-head section-head--row">
+      <div>
+        <h1 id="tool-h">{title}</h1>
+        <p>{lead}</p>
+      </div>
+      <div class="tool-setup">
+        <div class="tool-pick">
+          <span class="t-label muted" id="pick-lang">Language</span>
+          <div class="tabs" role="tablist" aria-labelledby="pick-lang" data-pick="lang">
+            {
+              langs.map((l, i) => (
+                <button class="tab" type="button" role="tab" aria-selected={i === 0 ? 'true' : 'false'} data-value={l.id}>
+                  {l.name}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+        <div class="tool-pick">
+          <span class="t-label muted" id="pick-kb">Your keyboard</span>
+          <div class="tabs" role="tablist" aria-labelledby="pick-kb" data-pick="kb">
+            <button class="tab" type="button" role="tab" aria-selected="true" data-value="standin">Ordinary</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" data-value="direct">MonoTypist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid fill">
+      <div class="frame frame--fill span-12 tool" data-tool data-kb="standin" data-layer="letters">
+        <div class="tool-bar" data-bar><slot name="bar" /></div>
+        <div class="tool-area" tabindex="0" role="application" aria-label={label} data-area>
+          <div class="tool-text">
+            <slot />
+            <p class="tool-note t-small muted" data-for="standin">
+              An ordinary keyboard stands in: the five keys from Q, from A and from Z are the letter keys. Hold Space, Enter or
+              Delete for the blue, red or orange legends. Or press the keys on the drawing, a thumb key first.
+            </p>
+            <p class="tool-note t-small muted" data-for="direct">
+              With MonoTypist plugged in, type as usual. Set the language here to the one your computer types in, and the drawing
+              shows the keys behind each character.
+            </p>
+          </div>
+          <div class="tool-kb"><Keyboard /></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style is:global>
+  /* ---- the section: one screen when the content fits, taller when it does not ---- */
+  /* The kit fixes a section at one screen from 1280px up. A typing page must never lose its last
+     row on a low laptop screen, so here the section may grow at every width. */
+  main > section.tool-section { height: auto; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
+  main > section.tool-section > .wrap { flex: 1 0 auto; height: auto; min-height: 0; }
+  main > section.tool-section > .wrap > .fill { flex: 1 0 auto; display: flex; flex-direction: column; }
+  main > section.tool-section .grid.fill > .tool.frame--fill { flex: 1 0 auto; height: auto; }
+
+  /* ---- the head: the two choices beside the heading ---- */
+  .tool-section .section-head--row > .tool-setup { gap: var(--s-3); max-width: none; }
+  .tool-pick { display: grid; gap: var(--s-1); justify-items: start; }
+  .tool-pick--row { display: flex; align-items: center; gap: var(--s-2); }
+  .tool-pick .tabs { flex-wrap: nowrap; }
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .tool-section .section-head--row > .tool-setup { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); }
+  }
+  @media (max-width: 639px) {
+    .tool-section .section-head p { font-size: var(--t-body); }
+    .tool-pick .tab { padding: 0 var(--s-3); }
+  }
+
+  /* ---- the frame: controls on top, then the text beside the drawing ---- */
+  .tool { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: var(--s-4); padding: var(--s-4); }
+  .tool::before { display: none; }
+  .tool-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
+  .tool-bar:empty { display: none; }
+  .tool-bar .tab { white-space: nowrap; }
+  /* A switch that is on looks like a chosen tab. */
+  .tab[aria-pressed='true'] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  /* Stacked (a phone, a tablet): the text to type, the drawing right under it, then the rest. */
+  .tool-area { flex: 1 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--s-4); border-radius: var(--r-md); }
+  .tool-text { display: contents; }
+  .tool-text > * { order: 2; }
+  .tool-text > [data-first] { order: 0; }
+  .tool-kb { order: 1; }
+  .tool-area:focus-visible { outline: none; } /* the text box's border shows the focus instead */
+  .tool-note { max-width: 62ch; }
+  .tool[data-kb='standin'] .tool-note[data-for='direct'],
+  .tool[data-kb='direct'] .tool-note[data-for='standin'] { display: none; }
+  .tool-kb { position: relative; aspect-ratio: 592 / 496; min-width: 0; }
+  .tool-kb > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .tool-kb .kb-key[data-key] { cursor: pointer; }
+  /* The box the text to type stands in. Its border turns dark while the keys go to it. */
+  .tool-box {
+    position: relative; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r-md);
+    font-family: var(--font-mono); font-weight: 500; color: var(--muted); cursor: text;
+    transition: border-color var(--dur) var(--ease);
+  }
+  .tool-area:focus .tool-box { border-color: var(--ink); }
+  /* Somewhere else has the keys: the text steps back and says how to come back. */
+  .tool-wake {
+    position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center;
+    background: color-mix(in oklab, var(--bg) 82%, transparent); border-radius: inherit;
+    font: 500 var(--t-small) var(--font-text); color: var(--ink);
+  }
+  .tool-area:focus .tool-wake { display: none; }
+  @media (min-width: 1024px) {
+    .tool-section .section-head--row { flex-wrap: nowrap; }
+    .tool { gap: var(--s-3); }
+    .tool-area { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-content: stretch; gap: var(--s-5); }
+    .tool-text { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
+    .tool-note { margin-top: auto; }
+    .tool-kb { aspect-ratio: auto; min-height: 340px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tool-box { transition: none; }
+  }
+</style>

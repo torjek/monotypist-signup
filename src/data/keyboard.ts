@@ -87,3 +87,20 @@ export const legends = Object.fromEntries(
     },
   ]),
 ) as Record<Lang, Record<Slot, string[]>>;
+
+// Where a character sits: the block key that types it and the layer it is on (the first layer
+// that has it, in the order the keycaps are read). Letters match in either case.
+const SLOTS: Slot[] = ['base', 'blue', 'red', 'orange'];
+export function keyFor(lang: Lang, c: string): { k: number; slot: Slot } | null {
+  if (!c || c === ' ') return null;
+  const want = c.toUpperCase();
+  for (const slot of SLOTS) {
+    const k = legends[lang][slot].indexOf(want);
+    if (k >= 0) return { k, slot };
+  }
+  return null;
+}
+
+// The thumb key that turns a layer on, or null for the base layer.
+export const thumbFor = (slot: Slot) =>
+  (Object.keys(thumbLayer) as (keyof typeof thumbLayer)[]).find((id) => thumbLayer[id] === slot) ?? null;
